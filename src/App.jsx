@@ -1,5 +1,50 @@
 import React, { useState, useEffect } from 'react';
 
+const TypewriterEffect = ({ strings, typeSpeed = 120, backSpeed = 140, loop = true }) => {
+  const [currentStringIndex, setCurrentStringIndex] = useState(0);
+  const [currentText, setCurrentText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    const currentString = strings[currentStringIndex];
+    
+    const timeout = setTimeout(() => {
+      if (isPaused) {
+        setIsPaused(false);
+        setIsDeleting(true);
+        return;
+      }
+
+      if (isDeleting) {
+        if (currentText.length > 0) {
+          setCurrentText(currentText.slice(0, -1));
+        } else {
+          setIsDeleting(false);
+          setCurrentStringIndex((prev) => (prev + 1) % strings.length);
+        }
+      } else {
+        if (currentText.length < currentString.length) {
+          setCurrentText(currentString.slice(0, currentText.length + 1));
+        } else {
+          if (loop) {
+            setIsPaused(true);
+          }
+        }
+      }
+    }, isDeleting ? backSpeed : (isPaused ? 1500 : typeSpeed));
+
+    return () => clearTimeout(timeout);
+  }, [currentText, isDeleting, isPaused, currentStringIndex, strings, typeSpeed, backSpeed, loop]);
+
+  return (
+    <span className="inline-block">
+      {currentText}
+      <span className="animate-pulse ml-1 text-purple-300">|</span>
+    </span>
+  );
+};
+
 const FloatingBubble = ({ delay = 0, duration = 8, onPop }) => {
   const [position, setPosition] = useState({
     x: Math.random() * 100,
@@ -47,7 +92,7 @@ const FloatingBubble = ({ delay = 0, duration = 8, onPop }) => {
 
   return (
     <div
-      className={`absolute rounded-full opacity-20 animate-pulse cursor-pointer hover:opacity-30 transition-all duration-200 ${isPopping ? 'animate-ping' : ''}`}
+      className={`absolute rounded-full opacity-40 animate-pulse cursor-pointer hover:opacity-60 transition-all duration-200 ${isPopping ? 'animate-ping' : ''}`}
       onClick={handleClick}
       style={{
         left: `${position.x}%`,
@@ -55,15 +100,17 @@ const FloatingBubble = ({ delay = 0, duration = 8, onPop }) => {
         width: `${position.size}px`,
         height: `${position.size}px`,
         background: `linear-gradient(45deg, 
-          rgba(147, 51, 234, 0.6), 
-          rgba(236, 72, 153, 0.6), 
-          rgba(59, 130, 246, 0.6))`,
+          rgba(147, 51, 234, 0.8), 
+          rgba(236, 72, 153, 0.8), 
+          rgba(59, 130, 246, 0.8))`,
         animationDelay: isPopping ? '0s' : `${delay}s`,
         animationDuration: isPopping ? '0.3s' : `${duration}s`,
         transition: isPopping ? 'all 0.3s ease-out' : 'all 3s ease-in-out',
         filter: 'blur(1px)',
         transform: isPopping ? 'scale(3)' : 'scale(1)',
-        zIndex: 1
+        zIndex: 20,
+        border: '2px solid rgba(255,255,255,0.3)',
+        boxShadow: '0 4px 15px rgba(147, 51, 234, 0.3)'
       }}
     />
   );
@@ -318,45 +365,65 @@ const App = () => {
         }}
       />
       
-      {/* Floating bubbles */}
-      {bubbles}
-      
-      {/* Mount Fuji Background */}
-      <div className="absolute bottom-0 left-0 right-0 z-0 opacity-20">
-        <svg viewBox="0 0 800 300" className="w-full h-auto">
-          {/* Mount Fuji main peak */}
+      {/* Mount Fuji Background - Made more visible and larger */}
+      <div className="absolute bottom-0 left-0 right-0 z-0 opacity-50">
+        <svg viewBox="0 0 800 500" className="w-full h-auto" style={{ minHeight: '50vh' }}>
+          {/* Mount Fuji main peak - Made much larger */}
           <path
-            d="M200 300 L400 50 L600 300 Z"
-            fill={isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}
+            d="M150 500 L400 80 L650 500 Z"
+            fill={isDarkMode ? 'rgba(200,200,255,0.3)' : 'rgba(80,50,150,0.25)'}
             className="transition-all duration-500"
+            stroke={isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}
+            strokeWidth="1"
           />
-          {/* Snow cap */}
+          {/* Snow cap - Made larger and more visible */}
           <path
-            d="M350 100 L400 50 L450 100 L430 110 L400 85 L370 110 Z"
-            fill={isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.4)'}
+            d="M320 160 L400 80 L480 160 L450 180 L400 130 L350 180 Z"
+            fill={isDarkMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.8)'}
             className="transition-all duration-500"
+            stroke={isDarkMode ? 'rgba(200,200,255,0.3)' : 'rgba(180,180,220,0.4)'}
+            strokeWidth="1"
           />
-          {/* Left smaller mountain */}
+          {/* Left smaller mountain - More visible */}
           <path
-            d="M0 300 L150 120 L300 300 Z"
-            fill={isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+            d="M0 500 L180 200 L360 500 Z"
+            fill={isDarkMode ? 'rgba(150,150,200,0.2)' : 'rgba(60,40,120,0.15)'}
             className="transition-all duration-500"
+            stroke={isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+            strokeWidth="1"
           />
-          {/* Right smaller mountain */}
+          {/* Right smaller mountain - More visible */}
           <path
-            d="M500 300 L650 140 L800 300 Z"
-            fill={isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+            d="M440 500 L620 220 L800 500 Z"
+            fill={isDarkMode ? 'rgba(150,150,200,0.2)' : 'rgba(60,40,120,0.15)'}
             className="transition-all duration-500"
+            stroke={isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+            strokeWidth="1"
           />
-          {/* Clouds around Fuji */}
-          <ellipse cx="320" cy="120" rx="30" ry="15" 
-            fill={isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)'} 
+          {/* Clouds around Fuji - Made larger and more visible */}
+          <ellipse cx="280" cy="200" rx="60" ry="25" 
+            fill={isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.4)'} 
             className="transition-all duration-500" />
-          <ellipse cx="480" cy="110" rx="25" ry="12" 
-            fill={isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)'} 
+          <ellipse cx="520" cy="180" rx="50" ry="20" 
+            fill={isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.4)'} 
             className="transition-all duration-500" />
+          <ellipse cx="350" cy="240" rx="40" ry="18" 
+            fill={isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.35)'} 
+            className="transition-all duration-500" />
+          
+          {/* Additional mountain details */}
+          <path
+            d="M200 450 Q300 400 400 430 Q500 400 600 450"
+            fill="none"
+            stroke={isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}
+            strokeWidth="2"
+            className="transition-all duration-500"
+          />
         </svg>
       </div>
+      
+      {/* Floating bubbles - Moved after Mount Fuji so they're on top */}
+      {bubbles}
       
       {/* Exit Confirmation Modal */}
       {showExitConfirm && (
@@ -777,7 +844,11 @@ const App = () => {
           )}
           
           <div className="mt-4 sm:mt-6 text-center text-xs sm:text-sm text-white/70 drop-shadow">
-            #SenadorJaniel
+            #<TypewriterEffect 
+              strings={['JanielSenador', 'SenadorJaniel', 'JanielVSenador']} 
+              typeSpeed={120} 
+              backSpeed={140} 
+            />
           </div>
         </div>
       </div>
