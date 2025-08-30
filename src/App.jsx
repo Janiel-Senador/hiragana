@@ -92,7 +92,7 @@ const App = () => {
   const initialCombinations = hiraganaData.map(item => item.romaji);
 
   // Mode selection
-  const [currentMode, setCurrentMode] = useState('picker'); // 'picker' or 'quiz'
+  const [currentMode, setCurrentMode] = useState('picker');
   
   // Picker mode states
   const [availableCombinations, setAvailableCombinations] = useState([...initialCombinations]);
@@ -109,6 +109,38 @@ const App = () => {
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [usedQuestions, setUsedQuestions] = useState([]);
+  
+  // Timer states
+  const [timerSeconds, setTimerSeconds] = useState(10);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [timerActive, setTimerActive] = useState(false);
+  const [showTimerSettings, setShowTimerSettings] = useState(false);
+
+  // Timer effect
+  useEffect(() => {
+    let interval = null;
+    if (timerActive && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft(time => {
+          if (time <= 1) {
+            // Time's up - mark as wrong
+            handleTimeUp();
+            return 0;
+          }
+          return time - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timerActive, timeLeft]);
+
+  const handleTimeUp = () => {
+    setTimerActive(false);
+    setSelectedAnswer('TIME_UP');
+    setIsCorrect(false);
+    setShowResult(true);
+    setTotalQuestions(prev => prev + 1);
+  };
 
   const handleBubblePop = () => {
     setBubblePopCount(prev => prev + 1);
@@ -147,7 +179,6 @@ const App = () => {
     const availableQuestions = hiraganaData.filter(item => !usedQuestions.includes(item.character));
     
     if (availableQuestions.length === 0) {
-      // All questions used, reset
       setUsedQuestions([]);
       return generateQuizQuestion();
     }
@@ -170,9 +201,16 @@ const App = () => {
     setUsedQuestions(prev => [...prev, correct.character]);
     setSelectedAnswer('');
     setShowResult(false);
+    
+    // Start timer
+    setTimeLeft(timerSeconds);
+    setTimerActive(true);
   };
 
   const handleAnswerSelect = (answer) => {
+    if (showResult) return;
+    
+    setTimerActive(false);
     setSelectedAnswer(answer);
     const correct = answer === currentQuestion.correctAnswer;
     setIsCorrect(correct);
@@ -195,17 +233,24 @@ const App = () => {
     setCurrentQuestion(null);
     setSelectedAnswer('');
     setShowResult(false);
+    setTimerActive(false);
+    setTimeLeft(0);
   };
 
   const switchMode = (mode) => {
     setCurrentMode(mode);
     if (mode === 'quiz' && !currentQuestion) {
-      generateQuizQuestion();
+      // Don't auto-start quiz, let user choose timer first
     }
   };
 
+  const startQuizWithTimer = () => {
+    setShowTimerSettings(false);
+    generateQuizQuestion();
+  };
+
   // Create array of bubbles
-  const bubbles = Array.from({ length: 15 }, (_, i) => (
+  const bubbles = Array.from({ length: 12 }, (_, i) => (
     <FloatingBubble 
       key={i} 
       delay={i * 0.5} 
@@ -234,16 +279,16 @@ const App = () => {
       {bubbles}
       
       {/* Main content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white/20 backdrop-blur-md rounded-2xl shadow-2xl p-8 max-w-lg w-full border border-white/30">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-2 sm:p-4">
+        <div className="bg-purple-900/30 backdrop-blur-md rounded-2xl shadow-2xl p-4 sm:p-8 max-w-lg w-full border border-purple-300/30 mx-2">
           
           {/* Mode Selection */}
-          <div className="flex mb-6 bg-white/10 rounded-xl p-1 backdrop-blur-sm">
+          <div className="flex mb-4 sm:mb-6 bg-purple-800/20 rounded-xl p-1 backdrop-blur-sm">
             <button
               onClick={() => switchMode('picker')}
-              className={`flex-1 py-2 px-4 rounded-lg font-semibold transition-all duration-300 ${
+              className={`flex-1 py-2 px-2 sm:px-4 rounded-lg font-semibold transition-all duration-300 text-sm sm:text-base ${
                 currentMode === 'picker' 
-                  ? 'bg-white/30 text-white shadow-lg' 
+                  ? 'bg-purple-600/40 text-white shadow-lg' 
                   : 'text-white/70 hover:text-white'
               }`}
             >
@@ -251,9 +296,9 @@ const App = () => {
             </button>
             <button
               onClick={() => switchMode('quiz')}
-              className={`flex-1 py-2 px-4 rounded-lg font-semibold transition-all duration-300 ${
+              className={`flex-1 py-2 px-2 sm:px-4 rounded-lg font-semibold transition-all duration-300 text-sm sm:text-base ${
                 currentMode === 'quiz' 
-                  ? 'bg-white/30 text-white shadow-lg' 
+                  ? 'bg-purple-600/40 text-white shadow-lg' 
                   : 'text-white/70 hover:text-white'
               }`}
             >
@@ -263,7 +308,7 @@ const App = () => {
 
           {/* Bubble Pop Counter */}
           <div className="text-center mb-4">
-            <span className="text-white/70 text-sm drop-shadow">
+            <span className="text-white/70 text-xs sm:text-sm drop-shadow">
               Bubbles Popped: {bubblePopCount} 🫧
             </span>
           </div>
@@ -271,15 +316,15 @@ const App = () => {
           {currentMode === 'picker' ? (
             // PICKER MODE
             <>
-              <h1 className="text-3xl font-bold text-center mb-6 text-white drop-shadow-lg">
+              <h1 className="text-2xl sm:text-3xl font-bold text-center mb-4 sm:mb-6 text-white drop-shadow-lg">
                 🎌 Hiragana Picker
               </h1>
               
-              <div className="text-center mb-6">
-                <div className="text-sm text-white/80 mb-2 drop-shadow">
+              <div className="text-center mb-4 sm:mb-6">
+                <div className="text-xs sm:text-sm text-white/80 mb-2 drop-shadow">
                   Remaining: {availableCombinations.length} | Picked: {pickedCombinations.length}
                 </div>
-                <div className="w-full bg-white/20 rounded-full h-3 backdrop-blur-sm">
+                <div className="w-full bg-purple-800/30 rounded-full h-3 backdrop-blur-sm">
                   <div 
                     className="bg-gradient-to-r from-yellow-400 to-orange-500 h-3 rounded-full transition-all duration-500 shadow-lg"
                     style={{ width: `${(pickedCombinations.length / initialCombinations.length) * 100}%` }}
@@ -289,11 +334,11 @@ const App = () => {
 
               {!isFinished ? (
                 <div className="text-center">
-                  <div className="mb-6">
+                  <div className="mb-4 sm:mb-6">
                     {currentPick && (
-                      <div className="bg-white/30 backdrop-blur-md rounded-xl p-6 mb-4 border border-white/20 shadow-lg">
-                        <p className="text-lg text-white/90 mb-2 drop-shadow">Your random combination is:</p>
-                        <p className="text-5xl font-bold text-white drop-shadow-lg animate-bounce">
+                      <div className="bg-purple-800/30 backdrop-blur-md rounded-xl p-4 sm:p-6 mb-4 border border-purple-300/30 shadow-lg">
+                        <p className="text-sm sm:text-lg text-white/90 mb-2 drop-shadow">Your random combination is:</p>
+                        <p className="text-3xl sm:text-5xl font-bold text-white drop-shadow-lg animate-bounce">
                           {currentPick}
                         </p>
                       </div>
@@ -302,21 +347,21 @@ const App = () => {
                   
                   <button
                     onClick={pickRandomCombination}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 px-8 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl backdrop-blur-sm border border-white/20"
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl backdrop-blur-sm border border-purple-300/30 text-sm sm:text-base"
                   >
                     {currentPick ? 'Get Another Rizz! 🎲' : 'Get Random Combination! 🎲'}
                   </button>
                 </div>
               ) : (
                 <div className="text-center">
-                  <div className="bg-white/30 backdrop-blur-md rounded-xl p-6 mb-4 border border-white/20 shadow-lg">
-                    <h2 className="text-2xl font-bold text-white mb-2 drop-shadow-lg animate-bounce">🎉 All Done!</h2>
-                    <p className="text-white/90 drop-shadow">All combinations have been picked!</p>
+                  <div className="bg-purple-800/30 backdrop-blur-md rounded-xl p-4 sm:p-6 mb-4 border border-purple-300/30 shadow-lg">
+                    <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 drop-shadow-lg animate-bounce">🎉 All Done!</h2>
+                    <p className="text-white/90 drop-shadow text-sm sm:text-base">All combinations have been picked!</p>
                   </div>
                   
                   <button
                     onClick={resetPicker}
-                    className="bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-4 px-8 rounded-xl hover:from-green-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl backdrop-blur-sm border border-white/20"
+                    className="bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-xl hover:from-green-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl backdrop-blur-sm border border-purple-300/30 text-sm sm:text-base"
                   >
                     Start Over 🔄
                   </button>
@@ -324,14 +369,14 @@ const App = () => {
               )}
 
               {pickedCombinations.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold text-white/90 mb-3 drop-shadow">Picked Combinations:</h3>
-                  <div className="max-h-32 overflow-y-auto bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/20">
-                    <div className="flex flex-wrap gap-2">
+                <div className="mt-4 sm:mt-6">
+                  <h3 className="text-sm sm:text-lg font-semibold text-white/90 mb-3 drop-shadow">Picked Combinations:</h3>
+                  <div className="max-h-24 sm:max-h-32 overflow-y-auto bg-purple-800/20 backdrop-blur-sm rounded-xl p-3 border border-purple-300/30">
+                    <div className="flex flex-wrap gap-1 sm:gap-2">
                       {pickedCombinations.map((combo, index) => (
                         <span
                           key={index}
-                          className="bg-white/30 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-sm font-medium border border-white/20 shadow-sm"
+                          className="bg-purple-700/30 backdrop-blur-sm text-white px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-medium border border-purple-300/30 shadow-sm"
                           style={{
                             animationDelay: `${index * 0.1}s`
                           }}
@@ -347,15 +392,56 @@ const App = () => {
           ) : (
             // QUIZ MODE
             <>
-              <h1 className="text-3xl font-bold text-center mb-6 text-white drop-shadow-lg">
+              <h1 className="text-2xl sm:text-3xl font-bold text-center mb-4 sm:mb-6 text-white drop-shadow-lg">
                 🧠 Hiragana Quiz
               </h1>
               
-              <div className="text-center mb-6">
-                <div className="text-sm text-white/80 mb-2 drop-shadow">
+              {/* Timer Settings */}
+              {showTimerSettings && (
+                <div className="bg-purple-800/40 backdrop-blur-md rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 border border-purple-300/30 shadow-lg">
+                  <h3 className="text-lg sm:text-xl font-bold text-white mb-4 text-center drop-shadow">⏱️ Timer Settings</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-white/90 text-sm mb-2">Seconds per question:</label>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {[5, 10, 15, 20, 30].map(seconds => (
+                          <button
+                            key={seconds}
+                            onClick={() => setTimerSeconds(seconds)}
+                            className={`px-3 sm:px-4 py-2 rounded-lg font-semibold transition-all duration-200 text-sm ${
+                              timerSeconds === seconds
+                                ? 'bg-purple-600/60 text-white border-2 border-purple-300/50'
+                                : 'bg-purple-700/30 text-white/80 hover:bg-purple-600/40 border border-purple-300/30'
+                            }`}
+                          >
+                            {seconds}s
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                      <button
+                        onClick={startQuizWithTimer}
+                        className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-xl backdrop-blur-sm border border-purple-300/30 text-sm sm:text-base"
+                      >
+                        Start Quiz! 🚀
+                      </button>
+                      <button
+                        onClick={() => setShowTimerSettings(false)}
+                        className="bg-purple-600/40 text-white font-semibold py-2 px-4 rounded-lg hover:bg-purple-600/60 transition-all duration-200 backdrop-blur-sm border border-purple-300/30 text-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="text-center mb-4 sm:mb-6">
+                <div className="text-xs sm:text-sm text-white/80 mb-2 drop-shadow">
                   Score: {score}/{totalQuestions} {totalQuestions > 0 && `(${Math.round((score/totalQuestions)*100)}%)`}
                 </div>
-                <div className="w-full bg-white/20 rounded-full h-3 backdrop-blur-sm">
+                <div className="w-full bg-purple-800/30 rounded-full h-3 backdrop-blur-sm">
                   <div 
                     className="bg-gradient-to-r from-green-400 to-blue-500 h-3 rounded-full transition-all duration-500 shadow-lg"
                     style={{ width: totalQuestions > 0 ? `${(score / totalQuestions) * 100}%` : '0%' }}
@@ -365,19 +451,38 @@ const App = () => {
 
               {currentQuestion && (
                 <div className="text-center">
-                  <div className="bg-white/30 backdrop-blur-md rounded-xl p-6 mb-6 border border-white/20 shadow-lg">
-                    <p className="text-lg text-white/90 mb-4 drop-shadow">What is the romaji for:</p>
-                    <p className="text-6xl font-bold text-white drop-shadow-lg mb-4">
+                  {/* Timer Display */}
+                  <div className="mb-4">
+                    <div className="bg-purple-800/40 backdrop-blur-md rounded-xl p-3 border border-purple-300/30 shadow-lg">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <span className="text-white/90 text-sm sm:text-base">⏱️ Time Left:</span>
+                        <span className={`font-bold text-lg sm:text-xl ${timeLeft <= 3 ? 'text-red-300 animate-pulse' : 'text-white'}`}>
+                          {timeLeft}s
+                        </span>
+                      </div>
+                      <div className="w-full bg-purple-900/40 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full transition-all duration-1000 ${timeLeft <= 3 ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-green-400 to-blue-500'}`}
+                          style={{ width: `${(timeLeft / timerSeconds) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-purple-800/30 backdrop-blur-md rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 border border-purple-300/30 shadow-lg">
+                    <p className="text-sm sm:text-lg text-white/90 mb-4 drop-shadow">What is the romaji for:</p>
+                    <p className="text-4xl sm:text-6xl font-bold text-white drop-shadow-lg mb-4 sm:mb-6">
                       {currentQuestion.character}
                     </p>
                     
                     {!showResult ? (
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                         {currentQuestion.options.map((option, index) => (
                           <button
                             key={index}
                             onClick={() => handleAnswerSelect(option)}
-                            className="bg-white/20 hover:bg-white/30 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 backdrop-blur-sm border border-white/20 shadow-lg"
+                            disabled={timeLeft === 0}
+                            className="bg-purple-700/30 hover:bg-purple-600/40 disabled:bg-purple-800/20 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 backdrop-blur-sm border border-purple-300/30 shadow-lg text-sm sm:text-base disabled:cursor-not-allowed disabled:transform-none"
                           >
                             {option}
                           </button>
@@ -385,18 +490,31 @@ const App = () => {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        <div className={`p-4 rounded-xl ${isCorrect ? 'bg-green-500/30' : 'bg-red-500/30'} backdrop-blur-sm border ${isCorrect ? 'border-green-300/50' : 'border-red-300/50'}`}>
-                          <p className="text-white font-bold text-xl">
-                            {isCorrect ? '🎉 Correct!' : '❌ Wrong!'}
-                          </p>
-                          <p className="text-white/90">
-                            {isCorrect 
-                              ? `Great job! ${currentQuestion.character} = ${currentQuestion.correctAnswer}` 
-                              : `Correct answer: ${currentQuestion.correctAnswer}`
+                        <div className={`p-4 rounded-xl backdrop-blur-sm border ${
+                          selectedAnswer === 'TIME_UP' 
+                            ? 'bg-orange-500/30 border-orange-300/50' 
+                            : isCorrect 
+                              ? 'bg-green-500/30 border-green-300/50' 
+                              : 'bg-red-500/30 border-red-300/50'
+                        }`}>
+                          <p className="text-white font-bold text-lg sm:text-xl">
+                            {selectedAnswer === 'TIME_UP' 
+                              ? '⏰ Time\'s Up!' 
+                              : isCorrect 
+                                ? '🎉 Correct!' 
+                                : '❌ Wrong!'
                             }
                           </p>
-                          {!isCorrect && (
-                            <p className="text-white/80 text-sm">
+                          <p className="text-white/90 text-sm sm:text-base">
+                            {selectedAnswer === 'TIME_UP'
+                              ? `Correct answer: ${currentQuestion.correctAnswer}`
+                              : isCorrect 
+                                ? `Great job! ${currentQuestion.character} = ${currentQuestion.correctAnswer}` 
+                                : `Correct answer: ${currentQuestion.correctAnswer}`
+                            }
+                          </p>
+                          {!isCorrect && selectedAnswer !== 'TIME_UP' && (
+                            <p className="text-white/80 text-xs sm:text-sm">
                               You selected: {selectedAnswer}
                             </p>
                           )}
@@ -404,7 +522,7 @@ const App = () => {
                         
                         <button
                           onClick={nextQuestion}
-                          className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 px-6 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-xl backdrop-blur-sm border border-white/20"
+                          className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 px-4 sm:px-6 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-xl backdrop-blur-sm border border-purple-300/30 text-sm sm:text-base"
                         >
                           Next Question ➡️
                         </button>
@@ -412,33 +530,50 @@ const App = () => {
                     )}
                   </div>
                   
-                  <button
-                    onClick={resetQuiz}
-                    className="bg-gradient-to-r from-gray-500 to-gray-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all duration-200 backdrop-blur-sm border border-white/20 text-sm"
-                  >
-                    Reset Quiz 🔄
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      onClick={resetQuiz}
+                      className="flex-1 bg-gradient-to-r from-gray-500 to-gray-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all duration-200 backdrop-blur-sm border border-purple-300/30 text-xs sm:text-sm"
+                    >
+                      Reset Quiz 🔄
+                    </button>
+                    <button
+                      onClick={() => setShowTimerSettings(true)}
+                      className="flex-1 bg-purple-600/40 text-white font-semibold py-2 px-4 rounded-lg hover:bg-purple-600/60 transition-all duration-200 backdrop-blur-sm border border-purple-300/30 text-xs sm:text-sm"
+                    >
+                      Timer Settings ⚙️
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {!currentQuestion && (
+              {!currentQuestion && !showTimerSettings && (
                 <div className="text-center">
-                  <div className="bg-white/30 backdrop-blur-md rounded-xl p-6 mb-4 border border-white/20 shadow-lg">
-                    <h2 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">🎯 Ready to Quiz?</h2>
-                    <p className="text-white/90 drop-shadow mb-4">Test your hiragana knowledge!</p>
-                    <button
-                      onClick={generateQuizQuestion}
-                      className="bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold py-4 px-8 rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-xl backdrop-blur-sm border border-white/20"
-                    >
-                      Start Quiz! 🚀
-                    </button>
+                  <div className="bg-purple-800/30 backdrop-blur-md rounded-xl p-4 sm:p-6 mb-4 border border-purple-300/30 shadow-lg">
+                    <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 drop-shadow-lg">🎯 Ready to Quiz?</h2>
+                    <p className="text-white/90 drop-shadow mb-4 text-sm sm:text-base">Test your hiragana knowledge!</p>
+                    <p className="text-white/70 text-xs sm:text-sm mb-4">Current timer: {timerSeconds} seconds per question</p>
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                      <button
+                        onClick={startQuizWithTimer}
+                        className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold py-3 sm:py-4 px-4 sm:px-8 rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-xl backdrop-blur-sm border border-purple-300/30 text-sm sm:text-base"
+                      >
+                        Start Quiz! 🚀
+                      </button>
+                      <button
+                        onClick={() => setShowTimerSettings(true)}
+                        className="bg-purple-600/40 text-white font-semibold py-2 px-4 rounded-lg hover:bg-purple-600/60 transition-all duration-200 backdrop-blur-sm border border-purple-300/30 text-xs sm:text-sm"
+                      >
+                        Change Timer ⚙️
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
             </>
           )}
           
-          <div className="mt-6 text-center text-sm text-white/70 drop-shadow">
+          <div className="mt-4 sm:mt-6 text-center text-xs sm:text-sm text-white/70 drop-shadow">
             #SenadorJaniel
           </div>
         </div>
