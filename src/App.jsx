@@ -174,11 +174,21 @@ const App = () => {
   };
 
   const generateQuizQuestion = () => {
+    // Check if we've completed all characters
+    if (usedQuestions.length >= hiraganaData.length) {
+      // Quiz completed - show final results
+      setCurrentQuestion(null);
+      setTimerActive(false);
+      return;
+    }
+
     const availableQuestions = hiraganaData.filter(item => !usedQuestions.includes(item.character));
     
     if (availableQuestions.length === 0) {
-      setUsedQuestions([]);
-      return generateQuizQuestion();
+      // This shouldn't happen with the check above, but just in case
+      setCurrentQuestion(null);
+      setTimerActive(false);
+      return;
     }
 
     const correct = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
@@ -221,6 +231,13 @@ const App = () => {
   };
 
   const nextQuestion = () => {
+    // Check if quiz is complete before generating next question
+    if (usedQuestions.length >= hiraganaData.length) {
+      // Quiz completed
+      setCurrentQuestion(null);
+      setTimerActive(false);
+      return;
+    }
     generateQuizQuestion();
   };
 
@@ -303,6 +320,43 @@ const App = () => {
       
       {/* Floating bubbles */}
       {bubbles}
+      
+      {/* Mount Fuji Background */}
+      <div className="absolute bottom-0 left-0 right-0 z-0 opacity-20">
+        <svg viewBox="0 0 800 300" className="w-full h-auto">
+          {/* Mount Fuji main peak */}
+          <path
+            d="M200 300 L400 50 L600 300 Z"
+            fill={isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}
+            className="transition-all duration-500"
+          />
+          {/* Snow cap */}
+          <path
+            d="M350 100 L400 50 L450 100 L430 110 L400 85 L370 110 Z"
+            fill={isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.4)'}
+            className="transition-all duration-500"
+          />
+          {/* Left smaller mountain */}
+          <path
+            d="M0 300 L150 120 L300 300 Z"
+            fill={isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+            className="transition-all duration-500"
+          />
+          {/* Right smaller mountain */}
+          <path
+            d="M500 300 L650 140 L800 300 Z"
+            fill={isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+            className="transition-all duration-500"
+          />
+          {/* Clouds around Fuji */}
+          <ellipse cx="320" cy="120" rx="30" ry="15" 
+            fill={isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)'} 
+            className="transition-all duration-500" />
+          <ellipse cx="480" cy="110" rx="25" ry="12" 
+            fill={isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)'} 
+            className="transition-all duration-500" />
+        </svg>
+      </div>
       
       {/* Exit Confirmation Modal */}
       {showExitConfirm && (
@@ -532,14 +586,25 @@ const App = () => {
               
               <div className="text-center mb-4 sm:mb-6">
                 <div className="text-xs sm:text-sm text-white/80 mb-2 drop-shadow">
-                  Score: {score}/{totalQuestions} {totalQuestions > 0 && `(${Math.round((score/totalQuestions)*100)}%)`}
+                  Progress: {usedQuestions.length}/{hiraganaData.length} characters | Score: {score}/{totalQuestions} {totalQuestions > 0 && `(${Math.round((score/totalQuestions)*100)}%)`}
                 </div>
-                <div className="w-full bg-purple-800/30 rounded-full h-3 backdrop-blur-sm">
+                <div className="w-full bg-purple-800/30 rounded-full h-3 backdrop-blur-sm mb-2">
                   <div 
-                    className="bg-gradient-to-r from-green-400 to-blue-500 h-3 rounded-full transition-all duration-500 shadow-lg"
+                    className="bg-gradient-to-r from-blue-400 to-purple-500 h-3 rounded-full transition-all duration-500 shadow-lg"
+                    style={{ width: `${(usedQuestions.length / hiraganaData.length) * 100}%` }}
+                  ></div>
+                </div>
+                <div className="w-full bg-purple-800/30 rounded-full h-2 backdrop-blur-sm">
+                  <div 
+                    className="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full transition-all duration-500 shadow-lg"
                     style={{ width: totalQuestions > 0 ? `${(score / totalQuestions) * 100}%` : '0%' }}
                   ></div>
                 </div>
+                {usedQuestions.length === hiraganaData.length && (
+                  <div className="mt-2 text-xs text-yellow-300 animate-pulse drop-shadow">
+                    🎌 Complete cycle! All {hiraganaData.length} characters covered!
+                  </div>
+                )}
               </div>
 
               {currentQuestion && (
@@ -618,12 +683,30 @@ const App = () => {
                           )}
                         </div>
                         
-                        <button
-                          onClick={nextQuestion}
-                          className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 px-4 sm:px-6 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-xl backdrop-blur-sm border border-purple-300/30 text-sm sm:text-base"
-                        >
-                          Next Question ➡️
-                        </button>
+                        {usedQuestions.length < hiraganaData.length ? (
+                          <button
+                            onClick={nextQuestion}
+                            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 px-4 sm:px-6 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-xl backdrop-blur-sm border border-purple-300/30 text-sm sm:text-base"
+                          >
+                            Next Question ➡️
+                          </button>
+                        ) : (
+                          <div className="bg-gradient-to-r from-green-500/30 to-blue-500/30 backdrop-blur-sm rounded-xl p-4 border border-green-300/50">
+                            <h3 className="text-xl font-bold text-white mb-2">🎌 Quiz Complete!</h3>
+                            <p className="text-white/90 mb-2">
+                              Final Score: {score}/{totalQuestions} ({Math.round((score/totalQuestions)*100)}%)
+                            </p>
+                            <p className="text-white/80 text-sm mb-4">
+                              You've completed all {hiraganaData.length} hiragana characters!
+                            </p>
+                            <button
+                              onClick={resetQuiz}
+                              className="bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-xl"
+                            >
+                              Start New Quiz 🔄
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -648,15 +731,37 @@ const App = () => {
               {!currentQuestion && !showTimerSettings && (
                 <div className="text-center">
                   <div className="bg-purple-800/30 backdrop-blur-md rounded-xl p-4 sm:p-6 mb-4 border border-purple-300/30 shadow-lg">
-                    <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 drop-shadow-lg">🎯 Ready to Quiz?</h2>
-                    <p className="text-white/90 drop-shadow mb-4 text-sm sm:text-base">Test your hiragana knowledge!</p>
-                    <p className="text-white/70 text-xs sm:text-sm mb-4">Current timer: {timerSeconds} seconds per question</p>
+                    {usedQuestions.length === 0 ? (
+                      <>
+                        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 drop-shadow-lg">🎯 Ready to Quiz?</h2>
+                        <p className="text-white/90 drop-shadow mb-4 text-sm sm:text-base">Test your hiragana knowledge!</p>
+                        <p className="text-white/70 text-xs sm:text-sm mb-4">Current timer: {timerSeconds} seconds per question</p>
+                        <p className="text-yellow-300/80 text-xs sm:text-sm mb-4">
+                          🎌 Complete all {hiraganaData.length} hiragana characters without repeats!
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 drop-shadow-lg animate-bounce">🎉 Quiz Completed!</h2>
+                        <p className="text-white/90 drop-shadow mb-2 text-sm sm:text-base">
+                          Amazing! You've mastered all {hiraganaData.length} hiragana characters!
+                        </p>
+                        <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-lg p-3 mb-4">
+                          <p className="text-white font-bold text-lg">
+                            Final Score: {score}/{totalQuestions} ({Math.round((score/totalQuestions)*100)}%)
+                          </p>
+                        </div>
+                        <p className="text-white/70 text-xs sm:text-sm mb-4">
+                          Ready for another round?
+                        </p>
+                      </>
+                    )}
                     <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                       <button
                         onClick={startQuizWithTimer}
                         className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold py-3 sm:py-4 px-4 sm:px-8 rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-xl backdrop-blur-sm border border-purple-300/30 text-sm sm:text-base"
                       >
-                        Start Quiz! 🚀
+                        {usedQuestions.length === 0 ? 'Start Quiz! 🚀' : 'New Quiz! 🚀'}
                       </button>
                       <button
                         onClick={() => setShowTimerSettings(true)}
