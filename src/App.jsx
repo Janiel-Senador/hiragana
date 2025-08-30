@@ -109,6 +109,10 @@ const App = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
   const [showTimerSettings, setShowTimerSettings] = useState(false);
+  
+  // App states
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // Timer effect
   useEffect(() => {
@@ -243,6 +247,24 @@ const App = () => {
     generateQuizQuestion();
   };
 
+  const handleExit = () => {
+    setShowExitConfirm(true);
+  };
+
+  const confirmExit = () => {
+    // Reset everything
+    resetPicker();
+    resetQuiz();
+    setCurrentMode('picker');
+    setShowExitConfirm(false);
+    setIsDarkMode(false);
+    setBubblePopCount(0);
+  };
+
+  const cancelExit = () => {
+    setShowExitConfirm(false);
+  };
+
   // Create array of bubbles
   const bubbles = Array.from({ length: 12 }, (_, i) => (
     <FloatingBubble 
@@ -254,17 +276,27 @@ const App = () => {
   ));
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Blurred animated background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-400 via-pink-500 via-blue-500 to-red-500 animate-pulse"></div>
+    <div className={`min-h-screen relative overflow-hidden transition-all duration-500 ${isDarkMode ? 'dark' : ''}`}>
+      {/* Background - changes based on dark mode */}
+      <div className={`absolute inset-0 transition-all duration-500 ${
+        isDarkMode 
+          ? 'bg-gradient-to-br from-gray-900 via-purple-900 via-indigo-900 to-black' 
+          : 'bg-gradient-to-br from-purple-400 via-pink-500 via-blue-500 to-red-500 animate-pulse'
+      }`}></div>
       <div 
         className="absolute inset-0"
         style={{
-          background: `
-            radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
-            radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%)
-          `,
+          background: isDarkMode 
+            ? `
+              radial-gradient(circle at 20% 80%, rgba(88, 28, 135, 0.4) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(67, 56, 202, 0.4) 0%, transparent 50%),
+              radial-gradient(circle at 40% 40%, rgba(30, 41, 59, 0.4) 0%, transparent 50%)
+            `
+            : `
+              radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%)
+            `,
           filter: 'blur(40px)'
         }}
       />
@@ -272,17 +304,78 @@ const App = () => {
       {/* Floating bubbles */}
       {bubbles}
       
+      {/* Exit Confirmation Modal */}
+      {showExitConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className={`${
+            isDarkMode ? 'bg-gray-900/90' : 'bg-purple-900/90'
+          } backdrop-blur-md rounded-2xl p-6 max-w-sm w-full border ${
+            isDarkMode ? 'border-gray-600/50' : 'border-purple-300/50'
+          } shadow-2xl`}>
+            <h3 className="text-xl font-bold text-white text-center mb-4">🚪 Exit App?</h3>
+            <p className="text-white/80 text-center mb-6 text-sm">
+              This will reset all progress and return to the beginning. Are you sure?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={cancelExit}
+                className={`flex-1 ${
+                  isDarkMode ? 'bg-gray-700/60 hover:bg-gray-600/70' : 'bg-purple-600/60 hover:bg-purple-500/70'
+                } text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 backdrop-blur-sm border ${
+                  isDarkMode ? 'border-gray-500/50' : 'border-purple-400/50'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmExit}
+                className="flex-1 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
+              >
+                Exit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Main content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-2 sm:p-4">
-        <div className="bg-purple-900/30 backdrop-blur-md rounded-2xl shadow-2xl p-4 sm:p-8 max-w-lg w-full border border-purple-300/30 mx-2">
+        <div className={`${
+          isDarkMode ? 'bg-gray-900/40' : 'bg-purple-900/30'
+        } backdrop-blur-md rounded-2xl shadow-2xl p-4 sm:p-8 max-w-lg w-full border ${
+          isDarkMode ? 'border-gray-600/30' : 'border-purple-300/30'
+        } mx-2 transition-all duration-500`}>
+          
+          {/* Top Controls */}
+          <div className="flex justify-between items-center mb-4">
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className={`${
+                isDarkMode 
+                  ? 'bg-yellow-500/20 hover:bg-yellow-400/30 border-yellow-400/50' 
+                  : 'bg-gray-800/20 hover:bg-gray-700/30 border-gray-400/50'
+              } text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 backdrop-blur-sm border text-sm flex items-center gap-2`}
+            >
+              {isDarkMode ? '☀️ Light' : '🌙 Dark'}
+            </button>
+            
+            <button
+              onClick={handleExit}
+              className="bg-red-600/20 hover:bg-red-500/30 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 backdrop-blur-sm border border-red-400/50 text-sm flex items-center gap-2"
+            >
+              🚪 Exit
+            </button>
+          </div>
           
           {/* Mode Selection */}
-          <div className="flex mb-4 sm:mb-6 bg-purple-800/20 rounded-xl p-1 backdrop-blur-sm">
+          <div className={`flex mb-4 sm:mb-6 ${
+            isDarkMode ? 'bg-gray-800/30' : 'bg-purple-800/20'
+          } rounded-xl p-1 backdrop-blur-sm transition-all duration-500`}>
             <button
               onClick={() => switchMode('picker')}
               className={`flex-1 py-2 px-2 sm:px-4 rounded-lg font-semibold transition-all duration-300 text-sm sm:text-base ${
                 currentMode === 'picker' 
-                  ? 'bg-purple-600/40 text-white shadow-lg' 
+                  ? `${isDarkMode ? 'bg-gray-600/50' : 'bg-purple-600/40'} text-white shadow-lg` 
                   : 'text-white/70 hover:text-white'
               }`}
             >
@@ -292,7 +385,7 @@ const App = () => {
               onClick={() => switchMode('quiz')}
               className={`flex-1 py-2 px-2 sm:px-4 rounded-lg font-semibold transition-all duration-300 text-sm sm:text-base ${
                 currentMode === 'quiz' 
-                  ? 'bg-purple-600/40 text-white shadow-lg' 
+                  ? `${isDarkMode ? 'bg-gray-600/50' : 'bg-purple-600/40'} text-white shadow-lg` 
                   : 'text-white/70 hover:text-white'
               }`}
             >
@@ -318,7 +411,9 @@ const App = () => {
                 <div className="text-xs sm:text-sm text-white/80 mb-2 drop-shadow">
                   Remaining: {availableCombinations.length} | Picked: {pickedCombinations.length}
                 </div>
-                <div className="w-full bg-purple-800/30 rounded-full h-3 backdrop-blur-sm">
+                <div className={`w-full ${
+                  isDarkMode ? 'bg-gray-700/40' : 'bg-purple-800/30'
+                } rounded-full h-3 backdrop-blur-sm transition-all duration-500`}>
                   <div 
                     className="bg-gradient-to-r from-yellow-400 to-orange-500 h-3 rounded-full transition-all duration-500 shadow-lg"
                     style={{ width: `${(pickedCombinations.length / initialCombinations.length) * 100}%` }}
@@ -330,7 +425,11 @@ const App = () => {
                 <div className="text-center">
                   <div className="mb-4 sm:mb-6">
                     {currentPick && (
-                      <div className="bg-purple-800/30 backdrop-blur-md rounded-xl p-4 sm:p-6 mb-4 border border-purple-300/30 shadow-lg">
+                      <div className={`${
+                        isDarkMode ? 'bg-gray-800/40' : 'bg-purple-800/30'
+                      } backdrop-blur-md rounded-xl p-4 sm:p-6 mb-4 border ${
+                        isDarkMode ? 'border-gray-500/40' : 'border-purple-300/30'
+                      } shadow-lg transition-all duration-500`}>
                         <p className="text-sm sm:text-lg text-white/90 mb-2 drop-shadow">Your random combination is:</p>
                         <p className="text-3xl sm:text-5xl font-bold text-white drop-shadow-lg animate-bounce">
                           {currentPick}
