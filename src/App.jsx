@@ -1,9 +1,4 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const FloatingBubble = ({ delay = 0, duration = 8, onPop }) => {
   const [position, setPosition] = useState({
@@ -481,7 +476,12 @@ const App = () => {
                             key={index}
                             onClick={() => handleAnswerSelect(option)}
                             disabled={timeLeft === 0}
-                            className="bg-purple-900/60 hover:bg-purple-800/70 disabled:bg-purple-900/30 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 backdrop-blur-sm border-2 border-purple-400/50 shadow-lg text-sm sm:text-base disabled:cursor-not-allowed disabled:transform-none hover:border-purple-300/70"
+                            className="bg-purple-800/80 hover:bg-purple-700/90 disabled:bg-purple-900/50 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 backdrop-blur-sm border-2 border-purple-500/60 shadow-xl text-sm sm:text-base disabled:cursor-not-allowed disabled:transform-none hover:border-purple-400/80 disabled:text-white/50"
+                            style={{ 
+                              background: timeLeft === 0 ? 'rgba(88, 28, 135, 0.5)' : 'rgba(88, 28, 135, 0.8)',
+                              color: 'white',
+                              textShadow: '1px 1px 2px rgba(0,0,0,0.8)'
+                            }}
                           >
                             {option}
                           </button>
