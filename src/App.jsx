@@ -306,30 +306,30 @@ const App = () => {
       
       {/* Exit Confirmation Modal */}
       {showExitConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4 md:p-6">
           <div className={`${
             isDarkMode ? 'bg-gray-900/90' : 'bg-purple-900/90'
-          } backdrop-blur-md rounded-2xl p-6 max-w-sm w-full border ${
+          } backdrop-blur-md rounded-xl sm:rounded-2xl lg:rounded-3xl p-4 sm:p-6 max-w-xs sm:max-w-sm md:max-w-md w-full mx-2 border-2 sm:border-4 md:border-[6px] ${
             isDarkMode ? 'border-gray-600/50' : 'border-purple-300/50'
           } shadow-2xl`}>
-            <h3 className="text-xl font-bold text-white text-center mb-4">🚪 Exit App?</h3>
-            <p className="text-white/80 text-center mb-6 text-sm">
+            <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center mb-3 sm:mb-4">🚪 Exit App?</h3>
+            <p className="text-white/80 text-center mb-4 sm:mb-6 text-xs sm:text-sm md:text-base">
               This will reset all progress and return to the beginning. Are you sure?
             </p>
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               <button
                 onClick={cancelExit}
                 className={`flex-1 ${
                   isDarkMode ? 'bg-gray-700/60 hover:bg-gray-600/70' : 'bg-purple-600/60 hover:bg-purple-500/70'
-                } text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 backdrop-blur-sm border ${
+                } text-white font-semibold py-2 sm:py-3 px-3 sm:px-4 rounded-lg sm:rounded-xl transition-all duration-200 backdrop-blur-sm border-2 sm:border-4 ${
                   isDarkMode ? 'border-gray-500/50' : 'border-purple-400/50'
-                }`}
+                } text-xs sm:text-sm md:text-base`}
               >
                 Cancel
               </button>
               <button
                 onClick={confirmExit}
-                className="flex-1 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
+                className="flex-1 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-2 sm:py-3 px-3 sm:px-4 rounded-lg sm:rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg border-2 sm:border-4 border-red-400/50 text-xs sm:text-sm md:text-base"
               >
                 Exit
               </button>
@@ -339,29 +339,29 @@ const App = () => {
       )}
       
       {/* Main content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-2 sm:p-4">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-1 sm:p-2 md:p-4 lg:p-6 xl:p-8">
         <div className={`${
           isDarkMode ? 'bg-gray-900/40' : 'bg-purple-900/30'
-        } backdrop-blur-md rounded-2xl shadow-2xl p-4 sm:p-8 max-w-lg w-full border ${
+        } backdrop-blur-md rounded-2xl sm:rounded-3xl lg:rounded-[2rem] shadow-2xl p-3 sm:p-4 md:p-6 lg:p-8 xl:p-10 w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl border-2 sm:border-4 md:border-[6px] lg:border-8 ${
           isDarkMode ? 'border-gray-600/30' : 'border-purple-300/30'
-        } mx-2 transition-all duration-500`}>
+        } mx-1 sm:mx-2 md:mx-4 transition-all duration-500`}>
           
           {/* Top Controls */}
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-3 sm:mb-4">
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
               className={`${
                 isDarkMode 
                   ? 'bg-yellow-500/20 hover:bg-yellow-400/30 border-yellow-400/50' 
                   : 'bg-gray-800/20 hover:bg-gray-700/30 border-gray-400/50'
-              } text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 backdrop-blur-sm border text-sm flex items-center gap-2`}
+              } text-white font-semibold py-1.5 sm:py-2 px-2 sm:px-3 md:px-4 rounded-md sm:rounded-lg md:rounded-xl transition-all duration-200 backdrop-blur-sm border-2 sm:border-4 md:border-[6px] text-xs sm:text-sm md:text-base flex items-center gap-1 sm:gap-2`}
             >
               {isDarkMode ? '☀️ Light' : '🌙 Dark'}
             </button>
             
             <button
               onClick={handleExit}
-              className="bg-red-600/20 hover:bg-red-500/30 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 backdrop-blur-sm border border-red-400/50 text-sm flex items-center gap-2"
+              className="bg-red-600/20 hover:bg-red-500/30 text-white font-semibold py-1.5 sm:py-2 px-2 sm:px-3 md:px-4 rounded-md sm:rounded-lg md:rounded-xl transition-all duration-200 backdrop-blur-sm border-2 sm:border-4 md:border-[6px] border-red-400/50 text-xs sm:text-sm md:text-base flex items-center gap-1 sm:gap-2"
             >
               🚪 Exit
             </button>
