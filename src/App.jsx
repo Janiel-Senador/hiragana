@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import * as Tone from 'tone';
 
 const TypewriterEffect = ({ strings, typeSpeed = 120, backSpeed = 140, loop = true }) => {
   const [currentStringIndex, setCurrentStringIndex] = useState(0);
@@ -119,19 +120,25 @@ const FloatingBubble = ({ delay = 0, duration = 8, onPop }) => {
 const App = () => {
   const hiraganaData = [
     { character: "あ", romaji: "a" }, { character: "い", romaji: "i" }, { character: "う", romaji: "u" }, { character: "え", romaji: "e" }, { character: "お", romaji: "o" },
-    { character: "か", romaji: "Ka" }, { character: "き", romaji: "Ki" }, { character: "く", romaji: "Ku" }, { character: "け", romaji: "Ke" }, { character: "こ", romaji: "Ko" },
-    { character: "さ", romaji: "Sa" }, { character: "し", romaji: "Shi" }, { character: "す", romaji: "Su" }, { character: "せ", romaji: "Se" }, { character: "そ", romaji: "So" },
+    { character: "か", romaji: "ka" }, { character: "き", romaji: "ki" }, { character: "く", romaji: "ku" }, { character: "け", romaji: "ke" }, { character: "こ", romaji: "ko" },
+    { character: "さ", romaji: "sa" }, { character: "し", romaji: "shi" }, { character: "す", romaji: "su" }, { character: "せ", romaji: "se" }, { character: "そ", romaji: "so" },
     { character: "た", romaji: "ta" }, { character: "ち", romaji: "chi" }, { character: "つ", romaji: "tsu" }, { character: "て", romaji: "te" }, { character: "と", romaji: "to" },
-    { character: "な", romaji: "na" }, { character: "に", romaji: "ni" }, { character: "ぬ", romaji: "nu" }, { character: "ね", romaji: "Ne" }, { character: "の", romaji: "No" },
-    { character: "は", romaji: "Ha" }, { character: "ひ", romaji: "Hi" }, { character: "ふ", romaji: "Fu" }, { character: "へ", romaji: "He" }, { character: "ほ", romaji: "Ho" },
-    { character: "ま", romaji: "Ma" }, { character: "み", romaji: "Mi" }, { character: "む", romaji: "Mu" }, { character: "め", romaji: "Me" }, { character: "も", romaji: "Mo" },
-    { character: "や", romaji: "Ya" }, { character: "ゆ", romaji: "Yu" }, { character: "よ", romaji: "Yo" },
-    { character: "ら", romaji: "Ra" }, { character: "れ", romaji: "Re" }, { character: "り", romaji: "Ri" }, { character: "ろ", romaji: "Ro" }, { character: "る", romaji: "Ru" },
-    { character: "わ", romaji: "Wa" }, { character: "を", romaji: "o" }
+    { character: "な", romaji: "na" }, { character: "に", romaji: "ni" }, { character: "ぬ", romaji: "nu" }, { character: "ね", romaji: "ne" }, { character: "の", romaji: "no" },
+    { character: "は", romaji: "ha" }, { character: "ひ", romaji: "hi" }, { character: "ふ", romaji: "fu" }, { character: "へ", romaji: "he" }, { character: "ほ", romaji: "ho" },
+    { character: "ま", romaji: "ma" }, { character: "み", romaji: "mi" }, { character: "む", romaji: "mu" }, { character: "め", romaji: "me" }, { character: "も", romaji: "mo" },
+    { character: "や", romaji: "ya" }, { character: "ゆ", romaji: "yu" }, { character: "よ", romaji: "yo" },
+    { character: "ら", romaji: "ra" }, { character: "れ", romaji: "re" }, { character: "り", romaji: "ri" }, { character: "ろ", romaji: "ro" }, { character: "る", romaji: "ru" },
+    { character: "わ", romaji: "wa" }, { character: "を", romaji: "wo" }, { character: "ん", romaji: "n" }
   ];
 
   const initialCombinations = hiraganaData.map(item => item.romaji);
 
+  // Audio states
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [audioInitialized, setAudioInitialized] = useState(false);
+  const [backgroundMusic, setBackgroundMusic] = useState(null);
+  const [synth, setSynth] = useState(null);
+  
   // Mode selection
   const [currentMode, setCurrentMode] = useState('picker');
   
@@ -161,6 +168,95 @@ const App = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
+  // Audio initialization
+  useEffect(() => {
+    const initAudio = async () => {
+      if (audioEnabled && !audioInitialized) {
+        try {
+          await Tone.start();
+          
+          // Create ambient background music with Japanese-inspired pentatonic scale
+          const reverb = new Tone.Reverb(4).toDestination();
+          const filter = new Tone.Filter(800, "lowpass").connect(reverb);
+          const synthInst = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: "sine" },
+            envelope: { attack: 2, decay: 1, sustain: 0.3, release: 4 }
+          }).connect(filter);
+          
+          setSynth(synthInst);
+          
+          // Japanese pentatonic scale notes
+          const pentatonicNotes = ["C4", "D4", "F4", "G4", "A4", "C5", "D5", "F5"];
+          
+          // Create gentle ambient background music
+          const bgMusic = new Tone.Loop((time) => {
+            const note = pentatonicNotes[Math.floor(Math.random() * pentatonicNotes.length)];
+            synthInst.triggerAttackRelease(note, "2n", time, 0.1);
+          }, "4n").start(0);
+          
+          Tone.Transport.bpm.value = 60;
+          setBackgroundMusic(bgMusic);
+          setAudioInitialized(true);
+        } catch (error) {
+          console.log("Audio initialization failed:", error);
+        }
+      }
+    };
+    
+    initAudio();
+  }, [audioEnabled, audioInitialized]);
+
+  // Control background music
+  useEffect(() => {
+    if (audioInitialized && backgroundMusic) {
+      if (audioEnabled) {
+        Tone.Transport.start();
+      } else {
+        Tone.Transport.stop();
+      }
+    }
+  }, [audioEnabled, audioInitialized, backgroundMusic]);
+
+  // Sound effects functions
+  const playCorrectSound = () => {
+    if (audioEnabled && synth) {
+      synth.triggerAttackRelease(["C5", "E5", "G5"], "8n", Tone.now(), 0.3);
+    }
+  };
+
+  const playWrongSound = () => {
+    if (audioEnabled && synth) {
+      synth.triggerAttackRelease(["C3", "B2"], "4n", Tone.now(), 0.2);
+    }
+  };
+
+  const playBubbleSound = () => {
+    if (audioEnabled && synth) {
+      const notes = ["C5", "D5", "E5", "F5", "G5"];
+      const note = notes[Math.floor(Math.random() * notes.length)];
+      synth.triggerAttackRelease(note, "16n", Tone.now(), 0.1);
+    }
+  };
+
+  const playButtonSound = () => {
+    if (audioEnabled && synth) {
+      synth.triggerAttackRelease("A4", "32n", Tone.now(), 0.05);
+    }
+  };
+
+  const toggleAudio = async () => {
+    if (!audioEnabled) {
+      // Enable audio - this will trigger initialization
+      setAudioEnabled(true);
+    } else {
+      // Disable audio
+      setAudioEnabled(false);
+      if (backgroundMusic) {
+        Tone.Transport.stop();
+      }
+    }
+  };
+
   // Timer effect
   useEffect(() => {
     let interval = null;
@@ -168,7 +264,6 @@ const App = () => {
       interval = setInterval(() => {
         setTimeLeft(time => {
           if (time <= 1) {
-            // Time's up - mark as wrong
             handleTimeUp();
             return 0;
           }
@@ -185,10 +280,12 @@ const App = () => {
     setIsCorrect(false);
     setShowResult(true);
     setTotalQuestions(prev => prev + 1);
+    playWrongSound();
   };
 
   const handleBubblePop = () => {
     setBubblePopCount(prev => prev + 1);
+    playBubbleSound();
   };
 
   const pickRandomCombination = () => {
@@ -210,6 +307,8 @@ const App = () => {
     if (newAvailable.length === 0) {
       setIsFinished(true);
     }
+    
+    playButtonSound();
   };
 
   const resetPicker = () => {
@@ -221,9 +320,7 @@ const App = () => {
   };
 
   const generateQuizQuestion = () => {
-    // Check if we've completed all characters
     if (usedQuestions.length >= hiraganaData.length) {
-      // Quiz completed - show final results
       setCurrentQuestion(null);
       setTimerActive(false);
       return;
@@ -232,7 +329,6 @@ const App = () => {
     const availableQuestions = hiraganaData.filter(item => !usedQuestions.includes(item.character));
     
     if (availableQuestions.length === 0) {
-      // This shouldn't happen with the check above, but just in case
       setCurrentQuestion(null);
       setTimerActive(false);
       return;
@@ -257,7 +353,6 @@ const App = () => {
     setSelectedAnswer('');
     setShowResult(false);
     
-    // Start timer
     setTimeLeft(timerSeconds);
     setTimerActive(true);
   };
@@ -274,13 +369,14 @@ const App = () => {
     
     if (correct) {
       setScore(prev => prev + 1);
+      playCorrectSound();
+    } else {
+      playWrongSound();
     }
   };
 
   const nextQuestion = () => {
-    // Check if quiz is complete before generating next question
     if (usedQuestions.length >= hiraganaData.length) {
-      // Quiz completed
       setCurrentQuestion(null);
       setTimerActive(false);
       return;
@@ -301,9 +397,6 @@ const App = () => {
 
   const switchMode = (mode) => {
     setCurrentMode(mode);
-    if (mode === 'quiz' && !currentQuestion) {
-      // Don't auto-start quiz, let user choose timer first
-    }
   };
 
   const startQuizWithTimer = () => {
@@ -316,7 +409,6 @@ const App = () => {
   };
 
   const confirmExit = () => {
-    // Reset everything
     resetPicker();
     resetQuiz();
     setCurrentMode('picker');
@@ -329,7 +421,6 @@ const App = () => {
     setShowExitConfirm(false);
   };
 
-  // Create array of bubbles
   const bubbles = Array.from({ length: 12 }, (_, i) => (
     <FloatingBubble 
       key={i} 
@@ -341,7 +432,6 @@ const App = () => {
 
   return (
     <div className={`min-h-screen relative overflow-hidden transition-all duration-500 ${isDarkMode ? 'dark' : ''}`}>
-      {/* Background - changes based on dark mode */}
       <div className={`absolute inset-0 transition-all duration-500 ${
         isDarkMode 
           ? 'bg-gradient-to-br from-gray-900 via-purple-900 via-indigo-900 to-black' 
@@ -365,10 +455,8 @@ const App = () => {
         }}
       />
       
-      {/* Mount Fuji Background - Made more visible and larger */}
       <div className="absolute bottom-0 left-0 right-0 z-0 opacity-50">
         <svg viewBox="0 0 800 500" className="w-full h-auto" style={{ minHeight: '50vh' }}>
-          {/* Mount Fuji main peak - Made much larger */}
           <path
             d="M150 500 L400 80 L650 500 Z"
             fill={isDarkMode ? 'rgba(200,200,255,0.3)' : 'rgba(80,50,150,0.25)'}
@@ -376,7 +464,6 @@ const App = () => {
             stroke={isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}
             strokeWidth="1"
           />
-          {/* Snow cap - Made larger and more visible */}
           <path
             d="M320 160 L400 80 L480 160 L450 180 L400 130 L350 180 Z"
             fill={isDarkMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.8)'}
@@ -384,7 +471,6 @@ const App = () => {
             stroke={isDarkMode ? 'rgba(200,200,255,0.3)' : 'rgba(180,180,220,0.4)'}
             strokeWidth="1"
           />
-          {/* Left smaller mountain - More visible */}
           <path
             d="M0 500 L180 200 L360 500 Z"
             fill={isDarkMode ? 'rgba(150,150,200,0.2)' : 'rgba(60,40,120,0.15)'}
@@ -392,7 +478,6 @@ const App = () => {
             stroke={isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
             strokeWidth="1"
           />
-          {/* Right smaller mountain - More visible */}
           <path
             d="M440 500 L620 220 L800 500 Z"
             fill={isDarkMode ? 'rgba(150,150,200,0.2)' : 'rgba(60,40,120,0.15)'}
@@ -400,7 +485,6 @@ const App = () => {
             stroke={isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
             strokeWidth="1"
           />
-          {/* Clouds around Fuji - Made larger and more visible */}
           <ellipse cx="280" cy="200" rx="60" ry="25" 
             fill={isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.4)'} 
             className="transition-all duration-500" />
@@ -410,8 +494,6 @@ const App = () => {
           <ellipse cx="350" cy="240" rx="40" ry="18" 
             fill={isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.35)'} 
             className="transition-all duration-500" />
-          
-          {/* Additional mountain details */}
           <path
             d="M200 450 Q300 400 400 430 Q500 400 600 450"
             fill="none"
@@ -422,10 +504,8 @@ const App = () => {
         </svg>
       </div>
       
-      {/* Floating bubbles - Moved after Mount Fuji so they're on top */}
       {bubbles}
       
-      {/* Exit Confirmation Modal */}
       {showExitConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className={`${
@@ -433,7 +513,7 @@ const App = () => {
           } backdrop-blur-md rounded-2xl p-6 max-w-sm w-full border ${
             isDarkMode ? 'border-gray-600/50' : 'border-purple-300/50'
           } shadow-2xl`}>
-            <h3 className="text-xl font-bold text-white text-center mb-4">🚪 Exit App?</h3>
+            <h3 className="text-xl font-bold text-white text-center mb-4">Exit App?</h3>
             <p className="text-white/80 text-center mb-6 text-sm">
               This will reset all progress and return to the beginning. Are you sure?
             </p>
@@ -459,7 +539,6 @@ const App = () => {
         </div>
       )}
       
-      {/* Main content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-2 sm:p-4">
         <div className={`${
           isDarkMode ? 'bg-gray-900/40' : 'bg-purple-900/30'
@@ -467,18 +546,30 @@ const App = () => {
           isDarkMode ? 'border-gray-600/30' : 'border-purple-300/30'
         } mx-2 transition-all duration-500`}>
           
-          {/* Top Controls */}
           <div className="flex justify-between items-center mb-4">
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className={`${
-                isDarkMode 
-                  ? 'bg-yellow-500/20 hover:bg-yellow-400/30 border-yellow-400/50' 
-                  : 'bg-gray-800/20 hover:bg-gray-700/30 border-gray-400/50'
-              } text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 backdrop-blur-sm border text-sm flex items-center gap-2`}
-            >
-              {isDarkMode ? '☀️ Light' : '🌙 Dark'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className={`${
+                  isDarkMode 
+                    ? 'bg-yellow-500/20 hover:bg-yellow-400/30 border-yellow-400/50' 
+                    : 'bg-gray-800/20 hover:bg-gray-700/30 border-gray-400/50'
+                } text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 backdrop-blur-sm border text-sm flex items-center gap-2`}
+              >
+                {isDarkMode ? '☀️' : '🌙'}
+              </button>
+              
+              <button
+                onClick={toggleAudio}
+                className={`${
+                  audioEnabled 
+                    ? 'bg-green-500/20 hover:bg-green-400/30 border-green-400/50' 
+                    : 'bg-red-500/20 hover:bg-red-400/30 border-red-400/50'
+                } text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 backdrop-blur-sm border text-sm flex items-center gap-2`}
+              >
+                {audioEnabled ? '🔊' : '🔇'}
+              </button>
+            </div>
             
             <button
               onClick={handleExit}
@@ -488,7 +579,6 @@ const App = () => {
             </button>
           </div>
           
-          {/* Mode Selection */}
           <div className={`flex mb-4 sm:mb-6 ${
             isDarkMode ? 'bg-gray-800/30' : 'bg-purple-800/20'
           } rounded-xl p-1 backdrop-blur-sm transition-all duration-500`}>
@@ -514,7 +604,6 @@ const App = () => {
             </button>
           </div>
 
-          {/* Bubble Pop Counter */}
           <div className="text-center mb-4">
             <span className="text-white/70 text-xs sm:text-sm drop-shadow">
               Bubbles Popped: {bubblePopCount} 🫧
@@ -522,7 +611,6 @@ const App = () => {
           </div>
 
           {currentMode === 'picker' ? (
-            // PICKER MODE
             <>
               <h1 className="text-2xl sm:text-3xl font-bold text-center mb-4 sm:mb-6 text-white drop-shadow-lg">
                 🎌 Hiragana Picker
@@ -563,7 +651,7 @@ const App = () => {
                     onClick={pickRandomCombination}
                     className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl backdrop-blur-sm border border-purple-300/30 text-sm sm:text-base"
                   >
-                    {currentPick ? 'Get Another Rizz! 🎲' : 'Get Random Combination! 🎲'}
+                    {currentPick ? 'Get Another! 🎲' : 'Get Random Combination! 🎲'}
                   </button>
                 </div>
               ) : (
@@ -591,9 +679,6 @@ const App = () => {
                         <span
                           key={index}
                           className="bg-purple-700/30 backdrop-blur-sm text-white px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-medium border border-purple-300/30 shadow-sm"
-                          style={{
-                            animationDelay: `${index * 0.1}s`
-                          }}
                         >
                           {combo}
                         </span>
@@ -604,13 +689,11 @@ const App = () => {
               )}
             </>
           ) : (
-            // QUIZ MODE
             <>
               <h1 className="text-2xl sm:text-3xl font-bold text-center mb-4 sm:mb-6 text-white drop-shadow-lg">
                 🧠 Hiragana Quiz
               </h1>
               
-              {/* Timer Settings */}
               {showTimerSettings && (
                 <div className="bg-purple-800/40 backdrop-blur-md rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 border border-purple-300/30 shadow-lg">
                   <h3 className="text-lg sm:text-xl font-bold text-white mb-4 text-center drop-shadow">⏱️ Timer Settings</h3>
@@ -636,7 +719,7 @@ const App = () => {
                     <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                       <button
                         onClick={startQuizWithTimer}
-                        className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-xl backdrop-blur-sm border border-purple-300/30 text-sm sm:text-base"
+                        className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold py-3 sm:py-4 px-4 sm:px-8 rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-xl backdrop-blur-sm border border-purple-300/30 text-sm sm:text-base"
                       >
                         Start Quiz! 🚀
                       </button>
@@ -676,7 +759,6 @@ const App = () => {
 
               {currentQuestion && (
                 <div className="text-center">
-                  {/* Timer Display */}
                   <div className="mb-4">
                     <div className="bg-purple-800/40 backdrop-blur-md rounded-xl p-3 border border-purple-300/30 shadow-lg">
                       <div className="flex items-center justify-center gap-2 mb-2">
@@ -708,11 +790,6 @@ const App = () => {
                             onClick={() => handleAnswerSelect(option)}
                             disabled={timeLeft === 0}
                             className="bg-purple-800/80 hover:bg-purple-700/90 disabled:bg-purple-900/50 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 backdrop-blur-sm border-2 border-purple-500/60 shadow-xl text-sm sm:text-base disabled:cursor-not-allowed disabled:transform-none hover:border-purple-400/80 disabled:text-white/50"
-                            style={{ 
-                              background: timeLeft === 0 ? 'rgba(88, 28, 135, 0.5)' : 'rgba(88, 28, 135, 0.8)',
-                              color: 'white',
-                              textShadow: '1px 1px 2px rgba(0,0,0,0.8)'
-                            }}
                           >
                             {option}
                           </button>
