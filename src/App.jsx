@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import * as Tone from 'tone';
 
 const TypewriterEffect = ({ strings, typeSpeed = 120, backSpeed = 140, loop = true }) => {
   const [currentStringIndex, setCurrentStringIndex] = useState(0);
@@ -133,12 +132,6 @@ const App = () => {
 
   const initialCombinations = hiraganaData.map(item => item.romaji);
 
-  // Audio states
-  const [audioEnabled, setAudioEnabled] = useState(false);
-  const [audioInitialized, setAudioInitialized] = useState(false);
-  const [backgroundMusic, setBackgroundMusic] = useState(null);
-  const [synth, setSynth] = useState(null);
-  
   // Mode selection
   const [currentMode, setCurrentMode] = useState('picker');
   
@@ -168,95 +161,6 @@ const App = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
-  // Audio initialization
-  useEffect(() => {
-    const initAudio = async () => {
-      if (audioEnabled && !audioInitialized) {
-        try {
-          await Tone.start();
-          
-          // Create ambient background music with Japanese-inspired pentatonic scale
-          const reverb = new Tone.Reverb(4).toDestination();
-          const filter = new Tone.Filter(800, "lowpass").connect(reverb);
-          const synthInst = new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: "sine" },
-            envelope: { attack: 2, decay: 1, sustain: 0.3, release: 4 }
-          }).connect(filter);
-          
-          setSynth(synthInst);
-          
-          // Japanese pentatonic scale notes
-          const pentatonicNotes = ["C4", "D4", "F4", "G4", "A4", "C5", "D5", "F5"];
-          
-          // Create gentle ambient background music
-          const bgMusic = new Tone.Loop((time) => {
-            const note = pentatonicNotes[Math.floor(Math.random() * pentatonicNotes.length)];
-            synthInst.triggerAttackRelease(note, "2n", time, 0.1);
-          }, "4n").start(0);
-          
-          Tone.Transport.bpm.value = 60;
-          setBackgroundMusic(bgMusic);
-          setAudioInitialized(true);
-        } catch (error) {
-          console.log("Audio initialization failed:", error);
-        }
-      }
-    };
-    
-    initAudio();
-  }, [audioEnabled, audioInitialized]);
-
-  // Control background music
-  useEffect(() => {
-    if (audioInitialized && backgroundMusic) {
-      if (audioEnabled) {
-        Tone.Transport.start();
-      } else {
-        Tone.Transport.stop();
-      }
-    }
-  }, [audioEnabled, audioInitialized, backgroundMusic]);
-
-  // Sound effects functions
-  const playCorrectSound = () => {
-    if (audioEnabled && synth) {
-      synth.triggerAttackRelease(["C5", "E5", "G5"], "8n", Tone.now(), 0.3);
-    }
-  };
-
-  const playWrongSound = () => {
-    if (audioEnabled && synth) {
-      synth.triggerAttackRelease(["C3", "B2"], "4n", Tone.now(), 0.2);
-    }
-  };
-
-  const playBubbleSound = () => {
-    if (audioEnabled && synth) {
-      const notes = ["C5", "D5", "E5", "F5", "G5"];
-      const note = notes[Math.floor(Math.random() * notes.length)];
-      synth.triggerAttackRelease(note, "16n", Tone.now(), 0.1);
-    }
-  };
-
-  const playButtonSound = () => {
-    if (audioEnabled && synth) {
-      synth.triggerAttackRelease("A4", "32n", Tone.now(), 0.05);
-    }
-  };
-
-  const toggleAudio = async () => {
-    if (!audioEnabled) {
-      // Enable audio - this will trigger initialization
-      setAudioEnabled(true);
-    } else {
-      // Disable audio
-      setAudioEnabled(false);
-      if (backgroundMusic) {
-        Tone.Transport.stop();
-      }
-    }
-  };
-
   // Timer effect
   useEffect(() => {
     let interval = null;
@@ -280,12 +184,10 @@ const App = () => {
     setIsCorrect(false);
     setShowResult(true);
     setTotalQuestions(prev => prev + 1);
-    playWrongSound();
   };
 
   const handleBubblePop = () => {
     setBubblePopCount(prev => prev + 1);
-    playBubbleSound();
   };
 
   const pickRandomCombination = () => {
@@ -307,8 +209,6 @@ const App = () => {
     if (newAvailable.length === 0) {
       setIsFinished(true);
     }
-    
-    playButtonSound();
   };
 
   const resetPicker = () => {
@@ -369,9 +269,6 @@ const App = () => {
     
     if (correct) {
       setScore(prev => prev + 1);
-      playCorrectSound();
-    } else {
-      playWrongSound();
     }
   };
 
@@ -547,29 +444,16 @@ const App = () => {
         } mx-2 transition-all duration-500`}>
           
           <div className="flex justify-between items-center mb-4">
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsDarkMode(!isDarkMode)}
-                className={`${
-                  isDarkMode 
-                    ? 'bg-yellow-500/20 hover:bg-yellow-400/30 border-yellow-400/50' 
-                    : 'bg-gray-800/20 hover:bg-gray-700/30 border-gray-400/50'
-                } text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 backdrop-blur-sm border text-sm flex items-center gap-2`}
-              >
-                {isDarkMode ? '☀️' : '🌙'}
-              </button>
-              
-              <button
-                onClick={toggleAudio}
-                className={`${
-                  audioEnabled 
-                    ? 'bg-green-500/20 hover:bg-green-400/30 border-green-400/50' 
-                    : 'bg-red-500/20 hover:bg-red-400/30 border-red-400/50'
-                } text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 backdrop-blur-sm border text-sm flex items-center gap-2`}
-              >
-                {audioEnabled ? '🔊' : '🔇'}
-              </button>
-            </div>
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className={`${
+                isDarkMode 
+                  ? 'bg-yellow-500/20 hover:bg-yellow-400/30 border-yellow-400/50' 
+                  : 'bg-gray-800/20 hover:bg-gray-700/30 border-gray-400/50'
+              } text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 backdrop-blur-sm border text-sm flex items-center gap-2`}
+            >
+              {isDarkMode ? '☀️ Light' : '🌙 Dark'}
+            </button>
             
             <button
               onClick={handleExit}
